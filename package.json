@@ -1,0 +1,32 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev server.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@types/axios": "^0.9.36",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/qrcode": "^1.5.6",
+    "@types/ws": "^8.18.1",
+    "axios": "^1.15.2",
+    "cors": "^2.8.6",
+    "dayjs": "^1.11.20",
+    "express": "^5.2.1",
+    "kbankshop-promtpay-generator": "^1.0.2",
+    "pg": "^8.20.0",
+    "prisma": "^7.8.0",
+    "promptparse": "^1.5.0",
+    "promptpay-qr": "^0.5.0",
+    "qrcode": "^1.5.4",
+    "ws": "^8.20.0"
+  }
+}
