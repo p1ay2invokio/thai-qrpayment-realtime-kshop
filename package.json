@@ -21,7 +21,7 @@
     "cors": "^2.8.6",
     "dayjs": "^1.11.20",
     "express": "^5.2.1",
-    "kbankshop-promtpay-generator": "^1.0.2",
+    "kbankshop-promtpay-generator": "^1.0.6",
     "pg": "^8.20.0",
     "prisma": "^7.8.0",
     "promptparse": "^1.5.0",

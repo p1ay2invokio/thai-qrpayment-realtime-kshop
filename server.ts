@@ -8,7 +8,7 @@ import { billPayment } from './node_modules/promptparse/dist/generate/index.js'
 import QRCode from 'qrcode'
 import dayjs from 'dayjs'
 
-import { createKshopQRCode } from 'kbankshop-promtpay-generator'
+import { createKshopQRCode, generateKBankDynamicQR} from 'kbankshop-promtpay-generator'
 const app = express()
 
 app.use(cors())
@@ -21,12 +21,12 @@ const wss = new WebSocketServer({ server })
 
 const clients = new Map()
 
-wss.on("connection", (ws, req:any) => {
+wss.on("connection", (ws, req: any) => {
 
     let url = new URL(req.url, 'http://localhost')
     let pid = url.searchParams.get("pid")
 
-    if(pid){
+    if (pid) {
         clients.set(pid, ws)
     }
 
@@ -40,7 +40,7 @@ wss.on("connection", (ws, req:any) => {
         ws.send("Server got your message!")
     })
 
-    ws.on('close', ()=> clients.delete(pid))
+    ws.on('close', () => clients.delete(pid))
 })
 
 
@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
     res.status(200).send("Hello World")
 })
 
-app.get("/qrcode/:id", async(req, res)=>{
+app.get("/qrcode/:id", async (req, res) => {
     let { id } = req.params
 
     let payment = await prisma.payment.findUnique({
@@ -57,7 +57,7 @@ app.get("/qrcode/:id", async(req, res)=>{
         }
     })
 
-    if(!payment){
+    if (!payment) {
         return res.status(404).send("Payment not found")
     }
 
@@ -87,7 +87,7 @@ app.post("/qrcode", async (req, res) => {
     }
 
 
-    let raw_res_qr = createKshopQRCode('0002010102110216478772000426938104155303920004269641531343007640052044640122208300000130810016A00000067701011201150107536000315010214KB0000020913060320KPS004KB00000209130631690016A00000067701011301030040214KB0000020913060420KPS004KB00000209130651430014A000000004101001064169710211123456789015204549953037645406150.005802TH5910PLAY2STORE6004CITY6225050946117914107084220830063042A1F', random_number)
+    let raw_res_qr = generateKBankDynamicQR('00020101021129390016A000000677010111031500499916832962053037645802TH630484EE', random_number)
 
     console.log("Raw QR : ", raw_res_qr)
 
@@ -103,40 +103,84 @@ app.post("/qrcode", async (req, res) => {
     res.status(200).send({ success: true, qr: raw_res_qr, id: new_data.id })
 })
 
-app.patch("/payment/:id", async (req, res) => {
-    let { id } = req.params
+// app.patch("/payment/:money", async (req, res) => {
+//     let { money } = req.params
 
-    let payment = await prisma.payment.findUnique({
+//     let payment = await prisma.payment.findUnique({
+//         where: {
+//             amount: parseFloat(money)
+//         }
+//     })
+
+//     if (!payment) {
+//         return res.status(404).send("Payment not found")
+//     }
+
+//     await prisma.payment.update({
+//         where: {
+//             amount: money
+//         },
+//         data: {
+//             status: "paid"
+//         }
+//     })
+
+//     const targetSocket = clients.get(money);
+
+//     if(targetSocket && targetSocket.readyState == 1){
+//         targetSocket.send(JSON.stringify({
+//             status: 'paid',
+//             message: "Payment Successful !"
+//         }))
+//     }
+
+//     res.status(200).send("Payment updated successfully")
+// })
+
+app.post("/webhook", async (req, res) => {
+
+    let { message } = req.body
+
+    console.log("Come")
+    console.log(message)
+
+    let paid = message.split(" ")[5]
+
+    let payment = await prisma.payment.findFirst({
         where: {
-            id: id
+            amount: parseFloat(paid),
+            status: 'pending'
         }
     })
 
-    if (!payment) {
-        return res.status(404).send("Payment not found")
-    }
+    if (payment) {
+        console.log(payment)
 
-    await prisma.payment.update({
-        where: {
-            id: id
-        },
-        data: {
-            status: "paid"
+        await prisma.payment.update({
+            where: {
+                id: payment.id
+            },
+            data: {
+                status: "paid"
+            }
+        })
+
+        const targetSocket = clients.get(payment.id);
+
+        if (targetSocket && targetSocket.readyState == 1) {
+            targetSocket.send(JSON.stringify({
+                status: 'paid',
+                message: "Payment Successful !"
+            }))
         }
-    })
-    
-    const targetSocket = clients.get(id);
 
-    if(targetSocket && targetSocket.readyState == 1){
-        targetSocket.send(JSON.stringify({
-            status: 'paid',
-            message: "Payment Successful !"
-        }))
+        res.status(200).send("QRCode Payment Successfully!")
+
+
     }
 
-    res.status(200).send("Payment updated successfully")
+
 })
-
 
 server.listen(3001, () => {
     console.log(`Server is running on port 3001`)
